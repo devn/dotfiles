@@ -20,28 +20,6 @@
 PAIR_EMAIL_USERNAME='dev'
 PAIR_EMAIL_DOMAIN='bendyworks.com'
 
-# Bendyworkers:
-begriffs='Joe Nelson'
-bendycode='Stephen Anderson'
-bigtiger='Jim Remsik'
-devn='Devin Walters'
-jaym3s='Jaymes Waters'
-listrophy='Bradley Grzesiak'
-mathias='Matt Gauger'
-randland='Nick Karpenske'
-ryalnd='Ryland Herrick'
-twopoint718='Chris Wilson'
-
-# Getty folks:
-jcarley='Jeff Carley'
-
-# Murfie folks:
-angelic='Angel N. Sciortino'
-glynnis='Glynnis Ritchie'
-
-# Relevance folks:
-jdpace='Jared Pace'
-
 ## END CONFIGURATION
 #######################################################################
 
@@ -74,9 +52,9 @@ fi
 
 for user in $usernames
 do
-  name=${!user}
+  name=`curl -is https://api.github.com/users/$user | grep -Po '"name":.*"' | cut -d \" -f 4`
   if [ -z "$name" ]; then
-    echo "Couldn't find author name for Github username: $user"
+    echo "Couldn't find author name for Github username: $user\nP.S. Are you online?"
     return 1
   fi
   names[${#names[@]}]=$name
