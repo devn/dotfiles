@@ -14,65 +14,62 @@
 #
 # Author: Ryland Herrick
 
-#######################################################################
-## CONFIGURATION
+pair() {
+  ## CONFIGURATION ######################################################
+  PAIR_EMAIL_USERNAME='dev'
+  PAIR_EMAIL_DOMAIN='bendyworks.com'
+  ## END CONFIGURATION ##################################################
 
-PAIR_EMAIL_USERNAME='dev'
-PAIR_EMAIL_DOMAIN='bendyworks.com'
+  set_session_vars() {
+    [ ! -f "$HOME/.pairrc" ] || source "$HOME/.pairrc"
+  }
 
-## END CONFIGURATION
-#######################################################################
+  print_config() {
+    set_session_vars
+    [ -n "$GIT_AUTHOR_NAME" ] && name_var="$GIT_AUTHOR_NAME" || name_var=`git config user.name`
+    [ -n "$GIT_AUTHOR_EMAIL" ] && email_var="$GIT_AUTHOR_EMAIL" || email_var=`git config user.email`
+    printf "user.name  = %s\n" "$name_var"
+    printf "user.email = %s\n" "$email_var"
+  }
 
-print_config() {
-  local name_var email_var
-  [ -n "$GIT_AUTHOR_NAME" ] && name_var="$GIT_AUTHOR_NAME" || name_var=`git config user.name`
-  [ -n "$GIT_AUTHOR_EMAIL" ] && email_var="$GIT_AUTHOR_EMAIL" || email_var=`git config user.email`
-  printf "user.name  = %s\n" "$name_var"
-  printf "user.email = %s\n" "$email_var"
-}
+  case "$1" in
+  -u) echo "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL" > "$HOME/.pairrc"
+      print_config
+      return 0
+      ;;
+  -q) set_session_vars
+      return 0
+      ;;
+  esac
 
-git=`git status 2> /dev/null`
-if [ $? != 0 ]; then
-  echo "This doesn't look like a git repository."
-  return 1
-fi
+  usernames=`printf "%s\n" $@ | tr A-Z a-z | sort`
 
-if [[ $1 == '-u' ]]; then
-  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL
-  print_config
-  return 0
-fi
-
-usernames=`printf "%s\n" $@ | tr A-Z a-z | sort`
-
-if [ ${#usernames} == 0 ]; then
-  print_config
-  return 0
-fi
-
-for user in $usernames
-do
-  name=`curl -is https://api.github.com/users/$user | grep -Po '"name":.*"' | cut -d \" -f 4`
-  if [ -z "$name" ]; then
-    echo "Couldn't find author name for Github username: $user\nP.S. Are you online?"
-    return 1
+  if [ ${#usernames} == 0 ]; then
+    print_config
+    return 0
   fi
-  names[${#names[@]}]=$name
-  pair_email=$pair_email+$user
-done
 
-pair_email=$PAIR_EMAIL_USERNAME$pair_email@$PAIR_EMAIL_DOMAIN
+  for user in $usernames
+  do
+    name=`curl -is https://api.github.com/users/$user | grep -Po '"name":.*"' | cut -d \" -f 4`
+    if [ -z "$name" ]; then
+      echo "Couldn't find author name for Github username: $user\nP.S. Are you online?"
+      return 1
+    fi
+    names[${#names[@]}]=$name
+    pair_email=$pair_email+$user
+  done
 
-if [[ $# > 2 ]]; then
-  pair_name=`printf "%s, " "${names[@]:0:$#-1}"`
-  pair_name="${pair_name}and ${names[$#-1]}"
-else
-  pair_name=`printf "%s and " "${names[@]}"`
-  pair_name=`echo $pair_name | sed 's/ and$//'`
-fi
+  pair_email=$PAIR_EMAIL_USERNAME$pair_email@$PAIR_EMAIL_DOMAIN
 
-export GIT_AUTHOR_NAME="$pair_name" GIT_AUTHOR_EMAIL="$pair_email"
+  if [[ $# > 2 ]]; then
+    pair_name=`printf "%s, " "${names[@]:0:$#-1}"`
+    pair_name="${pair_name}and ${names[$#-1]}"
+  else
+    pair_name=`printf "%s and " "${names[@]}"`
+    pair_name=`echo $pair_name | sed 's/ and$//'`
+  fi
 
-# var cleanup
-unset pair_email pair_name name names usernames user PAIR_EMAIL_USERNAME PAIR_EMAIL_DOMAIN
-print_config
+  echo "export GIT_AUTHOR_NAME=\"$pair_name\" GIT_AUTHOR_EMAIL=\"$pair_email\"" > "$HOME/.pairrc"
+  print_config
+}

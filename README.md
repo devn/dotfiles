@@ -8,20 +8,23 @@ A collection of scripts and commands that I use every day.
 Configures the git author/email for multiple developers when pair programming
 
 #### Setup
-First, you'll need the pair script added to your PATH.  In something like `~/.bash_login` add:
+Define the pair script in your shell by adding the following to a shell startup file (`~/.bash_profile`, `~/.bashrc`, etc.):
 ```bash
-export PATH="$PATH:<path_to_pair_script>"
+# defines the pair function
+source "<PATH_TO_PAIR_SCRIPT>"
 ```
 
-This will allow you to call `pair`, but you don't want to run `pair` in a subshell.  Instead add this nifty alias:
+If you want to persist the pair between sessions, without having to call `pair`, you can do something like
 ```bash
-alias pair='source pair'
+# quietly set the previous pairing state
+pair -q
 ```
-Another helpful alias if you don't like the spacebar:
-```bash
-alias unpair='source pair -u'
-```
+in the same file as above.
 
+A helpful alias if you don't like the spacebar:
+```bash
+alias unpair='pair -u'
+```
 
 #### Usage:
 
@@ -41,3 +44,6 @@ And check your current configuration:
 ```bash
 $ pair                  # Lists the current author/email
 ```
+
+## Contributing
+Pull requests are always welcome.
